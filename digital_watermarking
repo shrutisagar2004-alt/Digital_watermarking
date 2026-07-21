@@ -1,0 +1,97 @@
+clc;
+clear;
+close all;
+
+%% 📂 Select Image
+[file, path] = uigetfile({'*.jpg;*.png;*.bmp'}, 'Select an Image');
+if isequal(file,0)
+    return;
+end
+
+img = im2double(imread(fullfile(path, file)));
+[rows, cols, ch] = size(img);
+
+%% ✍️ Watermark Text
+wm_text = input('Enter your name: ', 's');
+
+%% 🎯 Choose Position
+disp('Choose Position:');
+disp('1 - Top Left');
+disp('2 - Top Right');
+disp('3 - Bottom Left');
+disp('4 - Bottom Right');
+disp('5 - Center');
+disp('6 - Diagonal Center');
+
+pos = input('Enter choice (1-6): ');
+
+%% 🔧 Settings
+fontSize = 45;
+alpha = 0.7;   % translucency
+
+%% 🧠 Create Text Mask
+overlay = zeros(rows, cols);
+
+figure('Visible','off');
+imshow(overlay);
+hold on;
+
+switch pos
+    
+    case 1 % Top Left
+        x = 20; y = 50; rot = 0;
+        
+    case 2 % Top Right
+        x = cols - 250; y = 50; rot = 0;
+        
+    case 3 % Bottom Left
+        x = 20; y = rows - 30; rot = 0;
+        
+    case 4 % Bottom Right
+        x = cols - 250; y = rows - 30; rot = 0;
+        
+    case 5 % Center
+        x = cols/2 - 150; y = rows/2; rot = 0;
+        
+    case 6 % 🔥 Diagonal Center (ONLY ONCE)
+        x = cols/2 - 200; y = rows/2; rot = 30;
+        
+    otherwise
+        disp('Invalid choice');
+        return;
+end
+
+% Draw text (single watermark)
+text(x, y, wm_text, ...
+    'Color','white', ...
+    'FontSize', fontSize, ...
+    'FontWeight','bold', ...
+    'Rotation', rot);
+
+frame = getframe(gca);
+text_img = rgb2gray(frame.cdata);
+close;
+
+text_img = imresize(text_img, [rows cols]);
+
+% Binary mask
+mask = imbinarize(text_img);
+
+%% 🔐 Apply Translucent Watermark
+watermarked = img;
+
+for c = 1:ch
+    temp = img(:,:,c);
+    temp(mask) = temp(mask)*(1-alpha) + alpha*1;
+    watermarked(:,:,c) = temp;
+end
+
+%% 📊 Display
+figure;
+subplot(1,2,1); imshow(img); title('Original Image');
+subplot(1,2,2); imshow(watermarked); title('Final Watermarked Image');
+
+%% 💾 Save
+imwrite(watermarked, 'final_watermark.png');
+
+disp('Saved as final_watermark.png');
